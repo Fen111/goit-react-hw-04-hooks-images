@@ -12,7 +12,6 @@ const getImages = axios.create({
 export default async function fetchImage(q = '', page = 1, per_page = 12) {
   try {
     const { data } = await getImages('', { params: { q, page, per_page } });
-
     return data.hits;
   } catch (error) {
     console.error(`Image ${q} not found`);

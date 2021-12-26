@@ -1,6 +1,6 @@
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import imagesApi from 'api/imagesApi';
 import s from './App.module.css';
 
@@ -18,45 +18,52 @@ export default function App() {
   const [largeImageUrl, setLargeImageUrl] = useState('');
   const [imageAlt, setImageAlt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  // const componentDidUpdate = (prevProps, prevState) => {
-  //   if (prevState.searchImage !== searchImage) this.fetchImages();
-  // };
+  const scrollToButtonRef = useRef();
 
   useEffect(() => {
-    if (!searchImage) {
-      fetchImages();
-    }
-  }, [fetchImages(), searchImage]);
+    if (searchImage) {
+      setIsLoading(true);
 
-  const fetchImages = async () => {
-    setIsLoading(true);
-    try {
-      const images = await imagesApi(searchImage, currentPage);
-      if (images.length < 1) {
-        toast.error(`Image ${searchImage} not found`);
-        return;
-      }
-      setArrImages([...arrImages, ...images]);
-      setCurrentPage(currentPage + 1);
-      setIsLoading(!isLoading);
-      // this.setState(({ arrImages, currentPage, isLoading }) => ({
-      //   arrImages: [...arrImages, ...images],
-      //   currentPage: currentPage + 1,
-      //   isLoading: !isLoading,
-      // }));
-    } catch (e) {
-      console.error(e);
+      imagesApi(searchImage, currentPage).then(images => {
+        if (images.length < 1) {
+          toast.error(`Image ${searchImage} not found`);
+          return;
+        }
+        setArrImages(state => [...state, ...images]);
+        setIsLoading(state => !state);
+      });
     }
+  }, [currentPage, searchImage]);
+
+  // useEffect(() => {
+  //   return async function fetchImages() {
+  //     setIsLoading(true);
+  //     try {
+  //       const images = await imagesApi(searchImage, currentPage);
+  //       if (images.length < 1) {
+  //         toast.error(`Image ${searchImage} not found`);
+  //         return;
+  //       }
+  //       setArrImages(state => [...state, ...images]);
+  //       setIsLoading(false);
+  //     } catch (e) {
+  //       console.error(e);
+  //     }
+  //   };
+  // }, [currentPage, searchImage]);
+
+  const handleFormSubmit = searchQuery => {
+    setArrImages([]);
+    setSearchImage(searchQuery);
+    setCurrentPage(1);
   };
 
-  const handleFormSubmit = searchImage => {
-    setSearchImage(null);
-    setArrImages([]);
+  const loadMoreButton = () => {
+    setCurrentPage(state => state + 1);
   };
 
   const toogleModal = () => {
-    setShowModal(!showModal);
+    setShowModal(state => !state);
   };
 
   const onClickOpenModal = e => {
@@ -68,11 +75,6 @@ export default function App() {
     setLargeImageUrl(e.target.dataset.img);
     setShowModal(true);
     setImageAlt(e.target.alt);
-    // this.setState({
-    //   largeImageURL: e.target.dataset.img,
-    //   showModal: true,
-    //   imageAlt: e.target.alt,
-    // });
   };
 
   return (
@@ -92,7 +94,9 @@ export default function App() {
 
       <ImageGallery images={arrImages} onClick={onClickOpenModal} />
       {isLoading && <LoaderContainer />}
-      {arrImages.length > 0 && <Button onClick={fetchImages} />}
+      {arrImages.length > 0 && (
+        <Button ref={scrollToButtonRef} onClick={loadMoreButton} />
+      )}
 
       {showModal && (
         <Modal onClose={toogleModal}>
@@ -102,97 +106,3 @@ export default function App() {
     </div>
   );
 }
-
-// export default class App extends Component {
-//   state = {
-//     arrImages: [],
-//     searchImage: null,
-//     currentPage: 1,
-//     showModal: false,
-//     largeImageURL: '',
-//     imageAlt: '',
-//     isLoading: false,
-//   };
-
-//   componentDidUpdate(prevProps, prevState) {
-//     const { searchImage } = this.state;
-
-//     if (prevState.searchImage !== searchImage) this.fetchImages();
-//   }
-
-//   fetchImages = async () => {
-//     const { searchImage, currentPage } = this.state;
-//     this.setState({ isLoading: true });
-
-//     try {
-//       const images = await imagesApi(searchImage, currentPage);
-//       if (images.length < 1) {
-//         toast.error(`Image ${searchImage} not found`);
-//         return;
-//       }
-//       this.setState(({ arrImages, currentPage, isLoading }) => ({
-//         arrImages: [...arrImages, ...images],
-//         currentPage: currentPage + 1,
-//         isLoading: !isLoading,
-//       }));
-//     } catch (e) {
-//       console.error(e);
-//     }
-//   };
-
-//   handleFormSubmit = searchImage => {
-//     this.setState({
-//       arrImages: [],
-//       searchImage,
-//     });
-//   };
-
-//   toogleModal = () => {
-//     this.setState(({ showModal }) => ({
-//       showModal: !showModal,
-//     }));
-//   };
-
-//   onClickOpenModal = e => {
-//     if (e.target.nodeName !== 'IMG') {
-//       return;
-//     }
-//     e.preventDefault();
-
-//     this.setState({
-//       largeImageURL: e.target.dataset.img,
-//       showModal: true,
-//       imageAlt: e.target.alt,
-//     });
-//   };
-
-//   render() {
-//     const { arrImages, showModal, largeImageURL, tags, isLoading } = this.state;
-//     return (
-//       <div className={s.App}>
-//         <Searchbar onSubmit={this.handleFormSubmit} />
-//         <ToastContainer
-//           position="top-right"
-//           autoClose={5000}
-//           hideProgressBar={false}
-//           newestOnTop={false}
-//           closeOnClick
-//           rtl={false}
-//           pauseOnFocusLoss
-//           draggable
-//           pauseOnHover
-//         />
-
-//         <ImageGallery images={arrImages} onClick={this.onClickOpenModal} />
-//         {isLoading && <LoaderContainer />}
-//         {arrImages.length > 0 && <Button onClick={this.fetchImages} />}
-
-//         {showModal && (
-//           <Modal onClose={this.toogleModal}>
-//             <img src={largeImageURL} alt={tags} />
-//           </Modal>
-//         )}
-//       </div>
-//     );
-//   }
-// }
