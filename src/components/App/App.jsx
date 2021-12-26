@@ -1,6 +1,6 @@
+import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useState, useEffect, useRef } from 'react';
 import imagesApi from 'api/imagesApi';
 import s from './App.module.css';
 
@@ -12,45 +12,32 @@ import LoaderContainer from 'components/LoaderContainer';
 
 export default function App() {
   const [arrImages, setArrImages] = useState([]);
-  const [searchImage, setSearchImage] = useState(null);
+  const [searchImage, setSearchImage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [largeImageUrl, setLargeImageUrl] = useState('');
   const [imageAlt, setImageAlt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const scrollToButtonRef = useRef();
 
   useEffect(() => {
-    if (searchImage) {
+    if (!searchImage) return;
+    async function fetchImages() {
       setIsLoading(true);
-
-      imagesApi(searchImage, currentPage).then(images => {
+      try {
+        const images = await imagesApi(searchImage, currentPage);
         if (images.length < 1) {
           toast.error(`Image ${searchImage} not found`);
           return;
         }
         setArrImages(state => [...state, ...images]);
-        setIsLoading(state => !state);
-      });
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
     }
+    fetchImages();
   }, [currentPage, searchImage]);
-
-  // useEffect(() => {
-  //   return async function fetchImages() {
-  //     setIsLoading(true);
-  //     try {
-  //       const images = await imagesApi(searchImage, currentPage);
-  //       if (images.length < 1) {
-  //         toast.error(`Image ${searchImage} not found`);
-  //         return;
-  //       }
-  //       setArrImages(state => [...state, ...images]);
-  //       setIsLoading(false);
-  //     } catch (e) {
-  //       console.error(e);
-  //     }
-  //   };
-  // }, [currentPage, searchImage]);
 
   const handleFormSubmit = searchQuery => {
     setArrImages([]);
@@ -94,9 +81,7 @@ export default function App() {
 
       <ImageGallery images={arrImages} onClick={onClickOpenModal} />
       {isLoading && <LoaderContainer />}
-      {arrImages.length > 0 && (
-        <Button ref={scrollToButtonRef} onClick={loadMoreButton} />
-      )}
+      {arrImages.length > 0 && <Button onClick={loadMoreButton} />}
 
       {showModal && (
         <Modal onClose={toogleModal}>
